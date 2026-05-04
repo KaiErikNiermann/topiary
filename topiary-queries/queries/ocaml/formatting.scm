@@ -1248,14 +1248,26 @@
   (#delimiter! ";")
 )
 
+; Use a per-record scope so that nested records (e.g. inside a list) don't
+; inherit the outer dangling_list_like scope's multi-line status, which would
+; cause the field softlines to oscillate across formatting passes.
+(record_expression
+  "{" @append_begin_scope @append_begin_measuring_scope
+  (#scope_id! "record_content")
+)
+(record_expression
+  "}" @prepend_end_scope @prepend_end_measuring_scope
+  (#scope_id! "record_content")
+)
+
 (record_expression
   (field_expression) @prepend_empty_scoped_softline
-  (#scope_id! "dangling_list_like")
+  (#scope_id! "record_content")
 )
 
 (record_expression
   "}" @prepend_empty_scoped_softline
-  (#scope_id! "dangling_list_like")
+  (#scope_id! "record_content")
 )
 
 (record_expression
@@ -1289,15 +1301,38 @@
 )
 
 ; Minimized version of the above for list expressions and array expressions
+;
+; Use a per-list/array scope so that nested lists (e.g. ["a"; "b"] inside an
+; outer list) don't inherit the outer dangling_list_like scope's multi-line
+; status, which would cause the inner semicolon softlines to oscillate across
+; formatting passes.
+
+(list_expression
+  "[" @append_begin_scope @append_begin_measuring_scope
+  (#scope_id! "list_content")
+)
+(list_expression
+  "]" @prepend_end_scope @prepend_end_measuring_scope
+  (#scope_id! "list_content")
+)
 
 (list_expression
   ";" @append_empty_scoped_softline
-  (#scope_id! "dangling_list_like")
+  (#scope_id! "list_content")
+)
+
+(array_expression
+  "[|" @append_begin_scope @append_begin_measuring_scope
+  (#scope_id! "array_content")
+)
+(array_expression
+  "|]" @prepend_end_scope @prepend_end_measuring_scope
+  (#scope_id! "array_content")
 )
 
 (array_expression
   ";" @append_empty_scoped_softline
-  (#scope_id! "dangling_list_like")
+  (#scope_id! "array_content")
 )
 
 ; Start an indented block after these
