@@ -807,6 +807,11 @@
       "}"
     ] @prepend_end_scope @prepend_end_measuring_scope
   ) @prepend_begin_measuring_scope
+  ; Quoted strings like `{||}` parse with bare `{` and `}` children, which
+  ; otherwise satisfy the inner bracket constraints and would create a
+  ; spurious scope on a non-bracketed construct. Their source text always
+  ; starts with `{|`, so we filter them out by testing the captured node.
+  (#not-match? @prepend_begin_measuring_scope "^\\{\\|")
 )
 (_
   (#scope_id! "dangling_list_like")
@@ -861,6 +866,7 @@
       ] @prepend_end_scope @prepend_end_measuring_scope
     ) @prepend_begin_measuring_scope
   )
+  (#not-match? @prepend_begin_measuring_scope "^\\{\\|")
 )
 (_
   (#scope_id! "dangling_list_like")
@@ -920,6 +926,7 @@
       ) @prepend_begin_measuring_scope
     )
   )
+  (#not-match? @prepend_begin_measuring_scope "^\\{\\|")
 )
 
 ; We want to add a line when the regular scope is multi-line,
@@ -955,22 +962,93 @@
   .
   (comment)*
   .
-  (_
-    .
-    [
+  ; List explicit node types instead of `(_)` so a quoted_string `{||}`,
+  ; whose `{` and `}` delimiters appear as bare bracket children, is not
+  ; matched as a record. There is no usable capture on the inner node here
+  ; for a `#not-match?` predicate (custom capture names are rejected by
+  ; topiary), so the exclusion is expressed structurally via this whitelist.
+  ; tuple_type / tuple_pattern are excluded because they have no bracket
+  ; children in the OCaml grammar (e.g. `int * string`).
+  [
+    (parenthesized_expression
+      .
       "("
+      ")" @prepend_indent_end
+      .
+    )
+    (list_expression
+      .
       "["
+      "]" @prepend_indent_end
+      .
+    )
+    (array_expression
+      .
       "[|"
+      "|]" @prepend_indent_end
+      .
+    )
+    (record_expression
+      .
       "{"
-    ]
-    [
-      ")"
-      "]"
-      "|]"
-      "}"
-    ] @prepend_indent_end
-    .
-  )
+      "}" @prepend_indent_end
+      .
+    )
+    (parenthesized_type
+      .
+      "("
+      ")" @prepend_indent_end
+      .
+    )
+    (record_declaration
+      .
+      "{"
+      "}" @prepend_indent_end
+      .
+    )
+    (object_type
+      .
+      "<"
+      ">" @prepend_indent_end
+      .
+    )
+    (parenthesized_pattern
+      .
+      "("
+      ")" @prepend_indent_end
+      .
+    )
+    (list_pattern
+      .
+      "["
+      "]" @prepend_indent_end
+      .
+    )
+    (array_pattern
+      .
+      "[|"
+      "|]" @prepend_indent_end
+      .
+    )
+    (record_pattern
+      .
+      "{"
+      "}" @prepend_indent_end
+      .
+    )
+    (package_expression
+      .
+      "("
+      ")" @prepend_indent_end
+      .
+    )
+    (parenthesized_module_expression
+      .
+      "("
+      ")" @prepend_indent_end
+      .
+    )
+  ]
   .
   "="? @do_nothing ; Abort if we're in a let binding before the `=`
   (#single_line_scope_only! "dangling_list_like")
